@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-//test
+
 contract AccessTokens is ERC1155 {
     using Counters for Counters.Counter;
     Counters.Counter private _newTicketId;
@@ -21,6 +21,7 @@ contract AccessTokens is ERC1155 {
     constructor(address _marketAdress) ERC1155(""){
         marketAddress = _marketAdress;
         owner = msg.sender;
+        
 
     }
 
