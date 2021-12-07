@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-//import "./Stuff.sol";
+
 
 contract Stuff {
     using Counters for Counters.Counter;
@@ -132,7 +132,8 @@ contract Gallery is ReentrancyGuard, Stuff {
     constructor() Stuff(){
         owner  = payable(msg.sender);        
     }
-  
+
+
     struct GalleryCollection {
         uint256 galleryItemId;
         uint256 startingTimestamp;
@@ -144,15 +145,14 @@ contract Gallery is ReentrancyGuard, Stuff {
         address payable creator;
 
      }
-     
-    GalleryCollection[] private newGallery;
 
     struct GalleryItem {
         uint256 galleryId;
         uint256 itemId;
         string tokenUri;
     }
-     
+
+    GalleryCollection[] private newGallery;
     GalleryItem[] private newItem;
 
     function createGalleryCollection(uint256 _stTimestamp, uint256 _enTimestamp, uint72 _ticketPrice, uint72 _ticketNo , string[] memory _tokenUris, address payable _creator) external  onlyAdmin {
@@ -169,9 +169,6 @@ contract Gallery is ReentrancyGuard, Stuff {
             newItem.push(GalleryItem(newGallery.length -1, i, newGallery[newGallery.length-1].tokenUri[i]));
         }
     }
-    function setTokenContract(address _tokenContract) external onlyAdmin {
-        tokenContract = _tokenContract;
-    }
 
     function transferTicket(uint256 _galleryId) external payable isUser {
         require(msg.value == newGallery[_galleryId].ticketprice,"Not valid price");
@@ -185,7 +182,6 @@ contract Gallery is ReentrancyGuard, Stuff {
         require(IERC1155(tokenContract).balanceOf(msg.sender, _galleryId) > 0 , "Buy a ticket first");
         require(block.timestamp < newGallery[_galleryId].endingTimestamp, " Gallery ended this ticket is useless now");
         IERC1155(tokenContract).safeTransferFrom(msg.sender, burner, _galleryId, 1, "");
-        //rest msg.value tranfers to owner if block.timestamp > endingTimestamp;
     }
 
     function transferFunds(uint256 _galleryId) external payable {
@@ -215,6 +211,14 @@ contract Gallery is ReentrancyGuard, Stuff {
         }
 
         return item;
+    }
+
+    function setTokenContract(address _tokenContract) external onlyAdmin {
+        tokenContract = _tokenContract;
+    }
+
+    function buyCurrency() external payable{
+
     }
     
 }

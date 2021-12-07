@@ -8,8 +8,9 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
 contract AccessTokens is ERC1155 {
     using Counters for Counters.Counter;
-    Counters.Counter private _newTicketId;
+    Counters.Counter private _newTicketId; 
 
+    uint8 constant TOKEN = 0;
     address marketAddress;
     address private owner ;
 
@@ -21,8 +22,8 @@ contract AccessTokens is ERC1155 {
     constructor(address _marketAdress) ERC1155(""){
         marketAddress = _marketAdress;
         owner = msg.sender;
-        
-
+        _mint(msg.sender, TOKEN, 10000000000, "");
+        _newTicketId.increment();
     }
 
     function createTickets(uint256 _totalSupply) external onlyOwner{
