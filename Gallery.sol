@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.7.0 <0.9.0;
-import "hardhat/console.sol";
+//import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol"; 
 
 
 contract Stuff {
@@ -127,6 +127,8 @@ contract Stuff {
 contract Gallery is ReentrancyGuard, Stuff {
     using Counters for Counters.Counter;
     Counters.Counter private  _newGallery;
+    uint256 constant tokenPrice = 1000000;
+    uint256 startingTimestamp;
     address payable owner ;
     address constant burner =  0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199;
     address tokenContract;
@@ -142,7 +144,6 @@ contract Gallery is ReentrancyGuard, Stuff {
         uint256 endingTimestamp;
         uint72 ticketprice;
         uint72 ticketNo;
-        uint72 ticketsSold;
         string[] tokenUri;
         address payable creator;
 
@@ -154,42 +155,47 @@ contract Gallery is ReentrancyGuard, Stuff {
         string tokenUri;
     }
 
+
+
     GalleryCollection[] private newGallery;
     GalleryItem[] private newItem;
+    
+    mapping(address => mapping(uint256 => uint256)) userHasAccess;
 
     function createGalleryCollection(uint256 _stTimestamp, uint256 _enTimestamp, uint72 _ticketPrice, uint72 _ticketNo , string[] memory _tokenUris, address payable _creator) external  onlyAdmin {
         require(_tokenUris.length<=15, "Max collection 15 items");
         require(_tokenUris.length>0, "Invalid no of items");
         require(_ticketNo <=200, "Max 200 guests");
-        newGallery.push(GalleryCollection(_newGallery.current(), _stTimestamp, _enTimestamp, _ticketPrice, _ticketNo, 0, _tokenUris, _creator));
         _newGallery.increment();
+        newGallery.push(GalleryCollection(_newGallery.current(), _stTimestamp, _enTimestamp, _ticketPrice, _ticketNo, _tokenUris, _creator));
         createCollectionItems();
      }
 
     function createCollectionItems() internal onlyAdmin{
         for(uint i =0; i<newGallery[newGallery.length-1].tokenUri.length; i++){
-            newItem.push(GalleryItem(newGallery.length -1, i, newGallery[newGallery.length-1].tokenUri[i]));
+            newItem.push(GalleryItem(newGallery.length, i, newGallery[newGallery.length].tokenUri[i]));
         }
     }
 
     function transferTicket(uint256 _galleryId) external payable isUser {
-        require(msg.value == newGallery[_galleryId].ticketprice,"Not valid price");
+        require(IERC1155(tokenContract).balanceOf(msg.sender, 0) >= newGallery[_galleryId].ticketprice,"Not valid price");
         require(tokenContract != address(0), "Set Token's Contract address first");
         require(newGallery[_galleryId].endingTimestamp > block.timestamp, "Gallery ended");
+        IERC1155(tokenContract).safeTransferFrom(msg.sender, owner, 0, newGallery[_galleryId].ticketprice, "");
         IERC1155(tokenContract).safeTransferFrom(owner, msg.sender, _galleryId, 1, "");
-        newGallery[_galleryId].ticketsSold++;
     }
 
     function accessGallery(uint256 _galleryId) external isUser {
         require(IERC1155(tokenContract).balanceOf(msg.sender, _galleryId) > 0 , "Buy a ticket first");
         require(block.timestamp < newGallery[_galleryId].endingTimestamp, " Gallery ended this ticket is useless now");
         IERC1155(tokenContract).safeTransferFrom(msg.sender, burner, _galleryId, 1, "");
+        userHasAccess[msg.sender][_galleryId] = block.timestamp;
     }
 
     function transferFunds(uint256 _galleryId) external payable {
         require(block.timestamp > newGallery[_galleryId].endingTimestamp, "Not finished yet");
         address payable creator = newGallery[_galleryId].creator;
-        uint72 price = newGallery[_galleryId].ticketsSold *newGallery[_galleryId].ticketprice ;
+        uint256 price = (newGallery[_galleryId].ticketNo - IERC1155(tokenContract).balanceOf(owner, _galleryId)) *newGallery[_galleryId].ticketprice ;
         creator.transfer(price * 2/10 );
     }
 
@@ -197,6 +203,7 @@ contract Gallery is ReentrancyGuard, Stuff {
         require(newItem.length > 0, "Something went Wrong");
         require(block.timestamp > newGallery[_galleryId].startingTimestamp, "Not time yet");
         require(block.timestamp < newGallery[_galleryId].endingTimestamp, "Finished");
+        require(block.timestamp < userHasAccess[msg.sender][_galleryId] * 3600 * 6,"Ticket expired");
         uint256 galleryItems = 0;
         for(uint i =0 ; i <newItem.length; i++){
             if(newItem[i].galleryId == _galleryId){
@@ -219,8 +226,9 @@ contract Gallery is ReentrancyGuard, Stuff {
         tokenContract = _tokenContract;
     }
 
-    function buyCurrency() external payable{
-
+    function buyCurrency(uint256 _quantity) external payable isUser{
+        require(msg.value == tokenPrice * _quantity,"Not the right ammount");
+        IERC1155(tokenContract).safeTransferFrom(owner, msg.sender,0,_quantity, "");
     }
     
 }
