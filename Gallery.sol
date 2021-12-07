@@ -10,7 +10,19 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 contract Stuff {
     using Counters for Counters.Counter;
     Counters.Counter private  _userId;
+    
     address[] admin;
+    address[] developers;
+
+    struct NewUser {
+        uint256 userId;
+        string userName;
+        address payable  userAd;
+    }
+    
+    NewUser[] public user;
+    
+
     
     constructor(){
         admin.push(msg.sender);
@@ -20,23 +32,6 @@ contract Stuff {
         require(isAdmin(), "Not Admin");
         _;
     }
-    
-    function isAdmin() internal view returns (bool) {
-        for(uint24 i = 0; i< admin.length; i++){
-            if(msg.sender == admin[i]){
-                return true;
-            }
-        }
-        return false;
-    }
-    event AdminCreated(address _newAdmin);
-    
-    function setAdmin(address _newAdmin) external onlyAdmin {
-        admin.push(_newAdmin);
-        emit AdminCreated(_newAdmin);
-    }
-
-    address[] developers;
 
     modifier developersAndHigher() {
         bool requirement = false;
@@ -60,20 +55,6 @@ contract Stuff {
         _;
     }
 
-    function addDeveloper(address _address) external onlyAdmin {
-        developers.push(_address);
-    }
-    
-    event NewUserCreated(uint256 indexed userId, string userName, address userAd);
-
-    struct NewUser {
-        uint256 userId;
-        string userName;
-        address payable  userAd;
-    }
-    
-    NewUser[] public user;
-    
     modifier notUser() {
         require(isNotUser());
         _;
@@ -103,6 +84,27 @@ contract Stuff {
         require(exists, "Not a user or an admin/developer");
         _;
     }
+    
+    function isAdmin() internal view returns (bool) {
+        for(uint24 i = 0; i< admin.length; i++){
+            if(msg.sender == admin[i]){
+                return true;
+            }
+        }
+        return false;
+    }
+    event AdminCreated(address _newAdmin);
+    
+    function setAdmin(address _newAdmin) external onlyAdmin {
+        admin.push(_newAdmin);
+        emit AdminCreated(_newAdmin);
+    }
+
+    function addDeveloper(address _address) external onlyAdmin {
+        developers.push(_address);
+    }
+    
+    event NewUserCreated(uint256 indexed userId, string userName, address userAd);
     
     function isNotUser() internal view returns (bool){
         if(user.length == 0) return true;
