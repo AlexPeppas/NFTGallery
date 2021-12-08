@@ -11,8 +11,8 @@ contract AccessTokens is ERC1155 {
     Counters.Counter private _newTicketId; 
 
     uint8 constant TOKEN = 0;
-    address marketAddress;
-    address private owner ;
+    address private marketAddress;
+    address private owner;
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only Owner can mint tokens");
@@ -23,6 +23,7 @@ contract AccessTokens is ERC1155 {
         marketAddress = _marketAdress;
         owner = msg.sender;
         _mint(msg.sender, TOKEN, 10000000000, "");
+        _setApprovalForAll(msg.sender, marketAddress, true);
         _newTicketId.increment();
     }
 
@@ -34,5 +35,6 @@ contract AccessTokens is ERC1155 {
 
     function reSetApproval() external {
         _setApprovalForAll(msg.sender, marketAddress, true);
-    }
+    } 
 }
+
