@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "./NewGallery.sol";
 
 contract Stuff {
@@ -82,6 +83,7 @@ contract Access is ReentrancyGuard, Stuff {
     uint256 constant tokenPrice = 1000000000000000;
     address payable owner ;
     address tokenContract;
+    address nftContract;
     address constant burner =  0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199;
    
     constructor() Stuff(){
@@ -152,8 +154,15 @@ contract Access is ReentrancyGuard, Stuff {
         return (items);      
     } 
 
-    function setTokenContract(address _tokenContract) external onlyAdmin {
+    function setTokenContract(address _tokenContract, address _nftContract) external onlyAdmin {
         tokenContract = _tokenContract;
+        nftContract = _nftContract;
+    }
+
+    function sellNft(uint256 _nftId, uint256 _price) external isUser{
+        require(IERC1155(tokenContract).balanceOf(msg.sender, 0) >= _price);
+        IERC1155(tokenContract).safeTransferFrom(msg.sender, owner, 0, _price, "");
+        IERC721(nftContract).transferFrom(address(this), msg.sender, _nftId);
     }
 
     function buyCurrency(uint256 _quantity) external payable isUser{
